@@ -25,11 +25,12 @@ join WWI_DS.dbo.Employee oldE on oldE.[Employee Key] = s.[Salesperson Key]
 group by oldE.Employee
 
 --Total sales per employee for WWIGlobal
-select e.Name, count(s.SaleDetailsID) as 'Total number of sales'
+select ut.PrimaryContact, count(s.SaleDetailsID) as 'Total number of sales'
 from WWIGlobal.dbo.SaleDetails s
 join WWIGlobal.dbo.SaleHeader sh on sh.SaleHeaderID = s.SaleHeaderID
 join WWIGlobal.dbo.Employee e on e.EmployeeID = sh.SalesPersonID
-group by e.Name
+join WWIGlobal.dbo.UserTable ut on ut.UserID =  e.EmployeeID
+group by ut.PrimaryContact
 
 --Total monetary sales per “Stock Item” for WWI_DS
 select sd.[Stock Item Key], p.[Stock Item] ,sum(p.[Unit Price] * sd.Quantity) as 'Monetary Sales'
