@@ -65,6 +65,7 @@ DROP TABLE IF EXISTS ConstraintsInfo
 
 
 
+
 CREATE TABLE State(
 	StateID int identity not null,
 	Code nvarchar(10) not null,
