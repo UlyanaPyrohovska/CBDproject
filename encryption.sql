@@ -3,42 +3,46 @@ CREATE MASTER KEY
 ENCRYPTION BY PASSWORD = 'CBDProjectPass'
 
 --Creating the Encryption Certificate
-CREATE CERTIFICATE EncryptionPassCert
+CREATE CERTIFICATE EncryptionCert
 WITH SUBJECT = 'Project Data'
 
 --Creating Symmetric Key
-CREATE SYMMETRIC KEY PasswordKey WITH
+CREATE SYMMETRIC KEY PriceKey WITH
 ALGORITHM = AES_256
-ENCRYPTION BY CERTIFICATE EncryptionPassCert
+ENCRYPTION BY CERTIFICATE EncryptionCert
 
---ALTER TABLE [dbo].[table1] ADD [EncryptName] VARBINARY(256)
+--Adding the EncryptPrice column to store encrypted price
+ALTER TABLE WWIGlobal.dbo.StockItem ADD [EncryptPrice] VARBINARY(256)
 
---OPEN SYMMETRIC KEY PasswordKey
---DECRYPTION BY CERTIFICATE EncryptionPassCert
---UPDATE [dbo].[table1]
---SET [EncryptName] = ENCRYPTBYKEY(KEY_GUID('TestTableKey'), name)
+--Encrypting the UnitPrice column 
+OPEN SYMMETRIC KEY PriceKey
+DECRYPTION BY CERTIFICATE EncryptionCert
+UPDATE WWIGlobal.dbo.StockItem
+SET [EncryptPrice] = ENCRYPTBYKEY(KEY_GUID('PriceKey'), convert(varchar(256),UnitPrice))
 
+--Decrypting the EncryptPrice column for testing purposes
+OPEN SYMMETRIC KEY PriceKey
+DECRYPTION BY CERTIFICATE EncryptionCert
+SELECT EncryptPrice, CONVERT(VARCHAR(50), DECRYPTBYKEY([EncryptPrice])) as [DecryptPrice]
+FROM WWIGlobal.dbo.StockItem
 
--- SP: Editing the procedures in order to enable encryption of the passwords
+-- SP: Editing the procedure in order to enable hashing of the passwords using 'SHA' algorithm
 --	Parameters:
 --		@UserID -> id of the user which needs to be authorized in the system
---		@password -> password to be encrypted in the system
+--		@hash -> password to be encrypted in the system
 --		@mail nvarchar(255) -> email of the new user
 CREATE OR ALTER PROCEDURE sp_createUser(
 	@UserID int,
-	@password varchar(30),
+	@hash varchar(30),
 	@mail nvarchar(255)
 )
 as
 begin try
-	if not exists (select 1 from UserTable c where c.UserID = @CustomerID)
-		RAISERROR('Customer does not exist in table',16,1);	
-
+	if not exists (select 1 from UserTable c where c.UserID = @UserID)
+		RAISERROR('User does not exist in table',16,1);	
 	begin tran
-		open symmetric key PasswordKey
-		decryption by certificate EncryptionPassCert
-		insert into UserData(CustomerID, PasswordHash, Email)
-		values(@CustomerID,	ENCRYPTBYKEY(KEY_GUID('PasswordKey'), @password), @mail)
+		insert into UserData(UserID, PasswordHash, Email)
+		values(@UserID, HashBytes('SHA', @hash), @mail)
 	commit tran
 		
 end try
@@ -48,3 +52,33 @@ begin catch
 	insert into Errors(Username, Message, Number, Date)
 	values (SUSER_ID(), ERROR_MESSAGE(),  ERROR_NUMBER(), getdate())
 end catch
+
+--SP: procedure to check if the password is valid
+--	Parameters:
+--		@hash -> password
+--		@mail -> email of the user
+CREATE OR ALTER PROCEDURE sp_password_check(
+	@mail nvarchar(255),
+	@hash varchar(30)
+)
+as
+	if exists(
+	SELECT 1 FROM UserData where Email = @mail and PasswordHash = HASHBYTES('SHA', @hash)
+	)
+	BEGIN
+		SELECT 'Password matched'
+	END
+	ELSE
+	BEGIN
+		SELECT 'Password did not match!'
+	END
+
+--Test case of creating a user and checcking the password through procedures
+
+exec sp_createUser 1,  N'teste123', 'ullasa@ukr.net'
+
+exec sp_password_check 'ullasa@ukr.net', N'teste123'
+
+--Justification: In terms of encryption it was decided to encrypt the price in order to have the ability to decrypt it in case of need
+--while the password needs to be stored hashed and we don't need to retreive the actual password.
+--That's why we are using symmetric key for encrypting and decrypting the unitPrice and use hashing to securely store the users' passwords
