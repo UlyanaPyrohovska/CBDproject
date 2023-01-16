@@ -1,19 +1,26 @@
 --SaleDetails Collection
 SELECT
-	SaleHeaderID as [SaleHeaderID], 
 	ut.PrimaryContact as [Customer],
+	ci.Name + '(' + st.Code + ')' as [City], 
 	Quantity as [Quantity], 
 	StockItemID as [StockItemID], 
-	tr.TaxRate as [TaxRate] FROM SaleDetails sd
+	ut1.PrimaryContact as [SalesPerson],
+	InvoiceDateKey as [InvoiceDate], 
+	tr.TaxRate as [TaxRate] ,
+	[Total Including Tax] as [TotalIncludingTax] FROM SaleDetails sd
 join Customer c on c.CustomerID = sd.CustomerID
 join UserTable ut on ut.UserID = c.CustomerID
 join TaxRate tr on tr.TaxRateID = sd.TaxRateId
+join SalesData sh on sh.SaleHeaderID = sd.SaleHeaderID
+join City ci on ci.CityID = sh.CityID
+join State st on st.StateID = ci.StateID
+join UserTable ut1 on ut1.UserID = sh.SalesPersonID
 FOR JSON PATH
 
 --SaleHeaders Collection
 Select
 	SaleHeaderID as [SaleHeaderID],
-	c.Name+ st.Code as [City], 
+	c.Name + '(' + st.Code + ')' as [City], 
 	ut.PrimaryContact as [SalesPerson], 
 	InvoiceDateKey as [InvoiceDate], 
 	[Total Including Tax] as [TotalIncludingTax]from SalesData sh
@@ -27,7 +34,7 @@ FOR JSON PATH
 SELECT 
 	si.StockItemID as [StockItemID], 
 	si.Name as [Name], 
-	c.Name as [City], 
+	c.Name as [Color], 
 	Brand as [Brand], 
 	s.Name as [Size], 
 	si.TypicalWeightPerUnit as [TypicalWeightPerUnit],
