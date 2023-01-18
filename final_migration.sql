@@ -1,3 +1,6 @@
+use WWIGlobal
+go
+
 --inserting data into states table
 insert into WWIGlobal.dbo.State
 select [Code], [Name] 
@@ -173,6 +176,7 @@ join WWIGlobal.dbo.Color col on col.Name collate LATIN1_GENERAL_CI_AS = oldItem.
 join TaxRate tr on tr.TaxRate = s.[Tax Rate]
 join WWIGlobal.dbo.StockItem newItem on newItem.Name collate LATIN1_GENERAL_CI_AS = s.Description and col.ColorID = newItem.ColorID
 order by newCust.UserID
+go
 
 CREATE VIEW ItemsDiscounted
 as
@@ -183,7 +187,7 @@ case
 end as DiscountedPrice
 from StockItem si
 left join WWIGlobal.dbo.Promotion pr on pr.PromotionID = si.PromotionID
-
+go
 --Creating the view with information about each sale
 CREATE VIEW SalesData
 AS 
@@ -201,3 +205,4 @@ join WWIGlobal.dbo.TaxRate tr on tr.TaxRateID = sd.TaxRateID
 left join WWIGlobal.dbo.Promotion pr on pr.PromotionID = si.PromotionID
 join ItemsDiscounted dis on dis.StockItemID = si.StockItemID
 group by sh.SaleHeaderID, sh.CityID, sh.InvoiceDateKey, sh.DeliveryDateKey, sh.SalesPersonID, sh.Profit
+go
