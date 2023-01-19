@@ -110,7 +110,8 @@ begin
 	DECLARE @leadTime int
 	DECLARE @actualTime int
 
-	if((select count(sd.SaleHeaderID) from SaleDetails sd) = 0) return 2
+	if((select count(sd.SaleHeaderID) from SaleDetails sd where sd.SaleHeaderID = @SaleID ) = 0) 
+		return 1
 
 	SELECT @leadTime = p.LeadTimeDays from dbo.SaleDetails sd 
 		join dbo.StockItem p on sd.StockItemID = p.StockItemID
@@ -352,8 +353,6 @@ begin catch
 end catch
 go
 
-exec sp_update_product_qty  1, 2
-go
 
 -- SP: Add a new product to a given sale
 -- Parameters: 
@@ -376,6 +375,9 @@ BEGIN TRY
 
 	if (select count(*) from Customer c where c.CustomerID = @CustomerID) = 0
 		RAISERROR('Customer does not exist in table',16,1);	
+
+	if (select count(*) from TaxRate t where t.TaxRateID = @TaxID) = 0
+		RAISERROR('TaxRate does not exist in table',16,1);	
 
 	begin tran
 		INSERT INTO SaleDetails(SaleHeaderID, CustomerID, Quantity, StockItemID,TaxRateId)
@@ -422,6 +424,8 @@ begin try
 	
 		insert into Promotion(Discount, StartDate, EndDate)
 		values(@Discount, @Start, @End)
+
+		
 
 		update StockItem
 		set PromotionID = @promoID
@@ -475,44 +479,58 @@ begin catch
 end catch
 go
 
---SP: creates a new user for a given Customer
--- throws an error if the customer in question does not exist
---parameters:
---		@hash binary(64) - the encrypted password of the user
---		@CustomerID int - the ID of the customer in question
---		@mail nvarchar(255) - the email of the customer
+-- SP: Editing the procedure in order to enable hashing of the passwords using 'SHA' algorithm
+--	Parameters:
+--		@UserID -> id of the user which needs to be authorized in the system
+--		@hash -> password to be encrypted in the system
+--		@mail nvarchar(255) -> email of the new user
 CREATE OR ALTER PROCEDURE sp_createUser(
-	@CustomerID int,
-	@hash binary(64),
+	@UserID int,
+	@hash varchar(30),
 	@mail nvarchar(255)
 )
 as
 begin try
-	if (select count(*) from Customer c where c.CustomerID = @CustomerID) = 0
-		RAISERROR('Customer does not exist in table',16,1);	
-	if (select count(*) from UserData c where c.UserDataID = @CustomerID) > 0
-		RAISERROR('User already exists in table',16,1);	
-
+	if not exists (select 1 from UserTable c where c.UserID = @UserID)
+		RAISERROR('User does not exist in table',16,1);	
 	begin tran
-		insert into UserData(UserDataID, PasswordHash, Email)
-		values(@CustomerID, @hash, @mail)
+		insert into UserData(UserID, PasswordHash, Email)
+		values(@UserID, HashBytes('SHA', @hash), @mail)
 	commit tran
 		
 end try
 begin catch
+	print ERROR_MESSAGE()
 	insert into Errors(Username, Message, Number, Date)
-	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
-	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
-			@sev int = ERROR_SEVERITY(),
-			@state smallint = ERROR_STATE()
-	RAISERROR(@msg, @sev, @state)
+	values (SUSER_ID(), ERROR_MESSAGE(),  ERROR_NUMBER(), getdate())
 end catch
+go
+
+--SP: procedure to check if the password is valid
+--	Parameters:
+--		@hash -> password
+--		@mail -> email of the user
+CREATE OR ALTER PROCEDURE sp_password_check(
+	@mail nvarchar(255),
+	@hash varchar(30)
+)
+as
+	if exists(
+	SELECT 1 FROM UserData where Email = @mail and PasswordHash = HASHBYTES('SHA', @hash)
+	)
+	BEGIN
+		SELECT 'Password matched'
+	END
+	ELSE
+	BEGIN
+		SELECT 'Password did not match!'
+	END
 go
 
 --SP: Generates a password reset token for the user
 -- throws an error if the user in question does not exist
 --parameters:
---		@UserID int - Id of the user
+--@UserID int - Id of the user
 create or alter procedure sp_generate_token(
 	@UserID int
 )
@@ -545,25 +563,26 @@ go
 --		@mail nvarchar(255) - the new email of the customer
 --		@hash binary(64) - the new encrypted password of the user
 CREATE OR ALTER PROCEDURE sp_editUser(
+	@userDataID int,
 	@userID int,
-	@CustomerID int,
 	@hash binary(64),
 	@mail nvarchar(255)
 )
 as
 begin try
  
-	if  (select count(*) from Customer c where c.CustomerID = @CustomerID) = 0
-		RAISERROR('Customer does not exist in table',16,1);
-	if  (select count(*) from UserData u where u.UserDataID = @userID) = 0
-		RAISERROR('User does not exist in table',16,1);
+	if (select count(*) from UserTable c where c.UserID = @userID) = 0
+		RAISERROR('User does not exists in table',16,1);	
+
+	if  (select count(*) from UserData u where u.UserDataID = @userDataID) = 0
+		RAISERROR('UserData does not exist in table',16,1);
 
 	begin tran
 		update UserData set
-			UserDataID = @CustomerID,
 			PasswordHash = @hash,
-			Email = @mail
-		where UserDataID = @userID
+			Email = @mail,
+			UserID = @userID
+		where UserDataID = @userDataID
 	commit tran
 
 end try

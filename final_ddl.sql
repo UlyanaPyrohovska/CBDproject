@@ -38,60 +38,79 @@ go
 use WWIGlobal;
 go
 
-DROP TABLE IF EXISTS SaleDetails 
-DROP TABLE IF EXISTS SaleHeader
-DROP TABLE IF EXISTS StockItem 
-DROP TABLE IF EXISTS Promotion 
-DROP TABLE IF EXISTS Employee 
-DROP TABLE IF EXISTS PasswordResetToken
-DROP TABLE IF EXISTS UserData
-DROP TABLE IF EXISTS Customer
-DROP TABLE IF EXISTS Package
-DROP TABLE IF EXISTS Color
-DROP TABLE IF EXISTS CustomerCategory
-DROP TABLE IF EXISTS BuyingGroup
-DROP TABLE IF EXISTS Location
-DROP TABLE IF EXISTS SalesTerritory
-DROP TABLE IF EXISTS Continent
-DROP TABLE IF EXISTS Country
-DROP TABLE IF EXISTS City
-DROP TABLE IF EXISTS State
-DROP TABLE IF EXISTS Size
-DROP TABLE IF EXISTS TaxRate
-DROP TABLE IF EXISTS SpaceUsed
-DROP TABLE IF EXISTS TablesInfo
-DROP TABLE IF EXISTS ConstraintsInfo
+
+--schema creation
+
+create schema salesMgt authorization [dbo];
+go
+
+create schema readData authorization [dbo];
+go
+
+create schema customer authorization [dbo];
+go
+
+create schema stock authorization [dbo];
+go
+
+create schema auth authorization [dbo];
+go
 
 
 
+DROP TABLE IF EXISTS salesMgt.SaleDetails 
+DROP TABLE IF EXISTS salesMgt.SaleHeader
+DROP TABLE IF EXISTS stock.StockItem 
+DROP TABLE IF EXISTS stock.Promotion 
+DROP TABLE IF EXISTS salesMgt.Employee 
+DROP TABLE IF EXISTS auth.PasswordResetToken
+DROP TABLE IF EXISTS auth.UserData
+DROP TABLE IF EXISTS auth.UserTable
+DROP TABLE IF EXISTS customer.Customer
+DROP TABLE IF EXISTS readData.Package
+DROP TABLE IF EXISTS readData.Color
+DROP TABLE IF EXISTS customer.CustomerCategory
+DROP TABLE IF EXISTS customer.BuyingGroup
+DROP TABLE IF EXISTS readData.Location
+DROP TABLE IF EXISTS readData.SalesTerritory
+DROP TABLE IF EXISTS readData.Continent
+DROP TABLE IF EXISTS readData.Country
+DROP TABLE IF EXISTS readData.City
+DROP TABLE IF EXISTS readData.State
+DROP TABLE IF EXISTS readData.Size
+DROP TABLE IF EXISTS readData.TaxRate
+DROP TABLE IF EXISTS auth.SpaceUsed
+DROP TABLE IF EXISTS auth.TablesInfo
+DROP TABLE IF EXISTS auth.ConstraintsInfo
+DROP TABLE IF EXISTS auth.Errors
 
 
-CREATE TABLE State(
+CREATE TABLE readData.State(
 	StateID int identity not null,
 	Code nvarchar(10) not null,
 	Name nvarchar(60) not null,
 	primary key(StateID)
 )on WWI_Data
 
-CREATE TABLE Country(
+CREATE TABLE readData.Country(
 	CountryID int identity not null,
 	Name nvarchar(60) not null,
 	primary key(CountryID)
 )on WWI_Data
 
-CREATE TABLE Continent(
+CREATE TABLE readData.Continent(
 	ContinentID int identity not null,
 	Name nvarchar(30) not null,
 	primary key(ContinentID)
 )on WWI_Data
 
-CREATE TABLE SalesTerritory(
+CREATE TABLE readData.SalesTerritory(
 	SalesTerritoryID int identity not null,
 	Name nvarchar(50) not null,
 	primary key(SalesTerritoryID)
 )on WWI_Data
 
-CREATE TABLE City(
+CREATE TABLE readData.City(
 	CityID int identity not null,
 	StateID int not null,
 	CountryID int not null,
@@ -100,97 +119,98 @@ CREATE TABLE City(
 	Name nvarchar(50) not null,
 	LastRecordedPopulation bigint not null,
 	primary key(CityID),
-	constraint FK_CIty_Country foreign key(CountryID) references Country(CountryID) ON DELETE CASCADE,
-	constraint FK_City_Continent foreign key(ContinentID) references Continent(ContinentID) ON DELETE CASCADE,
-	constraint FK_City_SalesTerritory foreign key(SalesTerritoryID) references SalesTerritory(SalesTerritoryID) ON DELETE CASCADE ,
-	constraint FK_City_State foreign key(StateID) references State(StateID) ON DELETE CASCADE
+	constraint FK_CIty_Country foreign key(CountryID) references readData.Country(CountryID) ON DELETE CASCADE,
+	constraint FK_City_Continent foreign key(ContinentID) references readData.Continent(ContinentID) ON DELETE CASCADE,
+	constraint FK_City_SalesTerritory foreign key(SalesTerritoryID) references readData.SalesTerritory(SalesTerritoryID) ON DELETE CASCADE ,
+	constraint FK_City_State foreign key(StateID) references readData.State(StateID) ON DELETE CASCADE
 )on WWI_Data
 
-CREATE TABLE Location(
+CREATE TABLE readData.Location(
 	LocationID int identity not null,
 	CityID int not null,
 	PostalCode nvarchar(10) not null,
 	primary key(LocationID),
-	constraint FK_Location_City foreign key(CityID) references City(CityID) ON DELETE CASCADE
+	constraint FK_Location_City foreign key(CityID) references readData.City(CityID) ON DELETE CASCADE
 )on WWI_Data
 
-CREATE TABLE BuyingGroup(
+CREATE TABLE customer.BuyingGroup(
 	BuyingGroupID int identity not null,
 	Name nvarchar(50) not null,
 	BillToCustomer nvarchar(100) not null,
 	primary key(BuyingGroupID)
 )on WWI_Data
 
-CREATE TABLE CustomerCategory(
+CREATE TABLE customer.CustomerCategory(
 	CustomerCategoryID int identity not null,
 	Name nvarchar(50) not null,
 	primary key(CustomerCategoryID)
 )on WWI_Data
 
-CREATE TABLE Color(
+CREATE TABLE readData.Color(
 	ColorID int identity not null,
 	Name nvarchar(20) not null,
 	primary key(ColorID)
 )on WWI_Data
 
-CREATE TABLE Package(
+CREATE TABLE readData.Package(
 	PackageID int identity not null,
 	Name nvarchar(50) not null,
 	primary key(PackageID)
 )on WWI_Data
 
-CREATE TABLE Size(
+CREATE TABLE readData.Size(
 	SizeID int identity not null,
 	Name nvarchar(20) not null,
 	primary key(SizeID)
 )on WWI_Data
 
-CREATE TABLE TaxRate(
+
+CREATE TABLE readData.TaxRate(
 	TaxRateID int identity not null,
 	TaxRate decimal(18,2) not null,
 	primary key(TaxRateID)
 )on WWI_Data
 
 
-CREATE TABLE UserTable(
+CREATE TABLE auth.UserTable(
 	UserID int identity not null primary key,
 	PrimaryContact nvarchar(50) not null
 )
 
-CREATE TABLE UserData(
+CREATE TABLE auth.UserData(
 	UserDataID int identity not null,
 	UserID int not null,
 	PasswordHash varbinary(64) not null,
 	Email nvarchar(255) not null,
 	primary key(UserDataID),
-	constraint FK_Customer_UserData foreign key(UserID) references UserTable(UserID) ON DELETE CASCADE
+	constraint FK_Customer_UserData foreign key(UserID) references auth.UserTable(UserID) ON DELETE CASCADE
 )
 
-CREATE TABLE PasswordResetToken(
+CREATE TABLE auth.PasswordResetToken(
 	UserDataID int not null,    
     Token varchar(128) not null unique,
 	ExpDate date not null,
     primary key (UserDataID, Token),
-	constraint FK_PasswordResetToken_UserData foreign key(UserDataID) references UserData(UserDataID) ON DELETE CASCADE
+	constraint FK_PasswordResetToken_UserData foreign key(UserDataID) references auth.UserData(UserDataID) ON DELETE CASCADE
 )
 
 
-CREATE TABLE Customer(
-	CustomerID int not null primary key references UserTable(UserID),
+CREATE TABLE customer.Customer(
+	CustomerID int not null primary key references auth.UserTable(UserID),
 	CategotyID int not null,
 	BuyingGroupID int not null,
 	LocationID int not null,
-	constraint FK_Customer_Location foreign key(LocationID) references Location(LocationID)  ON DELETE CASCADE,
-	constraint FK_Customer_Category foreign key(CategotyID) references CustomerCategory(CustomerCategoryID) ON DELETE CASCADE,
-	constraint FK_Customer_BuyingGroup foreign key(BuyingGroupID) references BuyingGroup(BuyingGroupID) ON DELETE CASCADE
+	constraint FK_Customer_Location foreign key(LocationID) references readData.Location(LocationID)  ON DELETE CASCADE,
+	constraint FK_Customer_Category foreign key(CategotyID) references customer.CustomerCategory(CustomerCategoryID) ON DELETE CASCADE,
+	constraint FK_Customer_BuyingGroup foreign key(BuyingGroupID) references customer.BuyingGroup(BuyingGroupID) ON DELETE CASCADE
 )
 
-CREATE TABLE Employee(
-	EmployeeID int not null primary key references UserTable(UserID),
+CREATE TABLE salesMgt.Employee(
+	EmployeeID int not null primary key references auth.UserTable(UserID),
 	Photo varbinary(max)
 )
 
-CREATE TABLE Promotion(
+CREATE TABLE stock.Promotion(
 	PromotionID int identity,
 	Discount decimal(18,3) not null,
 	StartDate date not null,
@@ -198,7 +218,7 @@ CREATE TABLE Promotion(
 	primary key(PromotionID)
 )
 
-CREATE TABLE StockItem(
+CREATE TABLE stock.StockItem(
 	StockItemID int identity not null,
 	Name nvarchar(100) not null,
 	ColorID int not null,
@@ -216,15 +236,15 @@ CREATE TABLE StockItem(
 	SizeID int not null,
 	PromotionID int,
 	primary key(StockItemID),
-	constraint FK_StockItem_Color foreign key(ColorID) references Color(ColorID)  ON DELETE CASCADE,
-	constraint FK_StockItem_Size foreign key(SizeID) references Size(SizeID) ON DELETE CASCADE,
-	constraint FK_StockItem_TaxRate foreign key(TaxRateID) references TaxRate(TaxRateID) ON DELETE CASCADE,
-	constraint FK_StockItem_SellingPackage foreign key(SellingPackageID) references Package(PackageID) ON DELETE CASCADE,
-	constraint FK_StockItem_BuyingPackage foreign key(BuyingPackageID) references Package(PackageID),
-	constraint FK_StockItem_Promotion foreign key(PromotionID) references Promotion(PromotionID) ON DELETE CASCADE
+	constraint FK_StockItem_Color foreign key(ColorID) references readData.Color(ColorID)  ON DELETE CASCADE,
+	constraint FK_StockItem_Size foreign key(SizeID) references readData.Size(SizeID) ON DELETE CASCADE,
+	constraint FK_StockItem_TaxRate foreign key(TaxRateID) references readData.TaxRate(TaxRateID) ON DELETE CASCADE,
+	constraint FK_StockItem_SellingPackage foreign key(SellingPackageID) references readData.Package(PackageID) ON DELETE CASCADE,
+	constraint FK_StockItem_BuyingPackage foreign key(BuyingPackageID) references readData.Package(PackageID),
+	constraint FK_StockItem_Promotion foreign key(PromotionID) references stock.Promotion(PromotionID) ON DELETE CASCADE
 )
 
-CREATE TABLE SaleHeader(
+CREATE TABLE salesMgt.SaleHeader(
 	SaleHeaderID int identity not null,
 	SalesPersonID int not null,
 	CityID int not null,
@@ -232,11 +252,11 @@ CREATE TABLE SaleHeader(
 	DeliveryDateKey date,
 	Profit decimal(18,2) not null,
 	primary key(SaleHeaderID),
-	constraint FK_SaleHeader_Employee foreign key(SalesPersonID) references Employee(EmployeeID) ON DELETE CASCADE,
-	constraint FK_SaleHeader_City foreign key(CityID) references City(CityID) ON DELETE CASCADE
+	constraint FK_SaleHeader_Employee foreign key(SalesPersonID) references salesMgt.Employee(EmployeeID) ON DELETE CASCADE,
+	constraint FK_SaleHeader_City foreign key(CityID) references readData.City(CityID) ON DELETE CASCADE
 )
 
-CREATE TABLE SaleDetails (
+CREATE TABLE salesMgt.SaleDetails (
 	SaleDetailsID int identity not null,
 	SaleHeaderID int not null,
 	CustomerID int not null,
@@ -244,12 +264,12 @@ CREATE TABLE SaleDetails (
 	StockItemID int not null,
 	TaxRateId int not null,
 	primary key(SaleDetailsID),
-	constraint FK_SaleHeader_TaxRate foreign key(TaxRateID) references TaxRate(TaxRateID) ON DELETE CASCADE,
-	constraint FK_SaleDetails_Customer foreign key(CustomerID) references Customer(CustomerID) ON DELETE CASCADE,
-	constraint FK_SaleDetails_SaleHeader foreign key(SaleHeaderID) references SaleHeader(SaleHeaderID),
-	constraint FK_SaleDetails_StockItem foreign key(StockItemID) references StockItem(StockItemID)
+	constraint FK_SaleHeader_TaxRate foreign key(TaxRateID) references readData.TaxRate(TaxRateID) ON DELETE CASCADE,
+	constraint FK_SaleDetails_Customer foreign key(CustomerID) references customer.Customer(CustomerID) ON DELETE CASCADE,
+	constraint FK_SaleDetails_SaleHeader foreign key(SaleHeaderID) references salesMgt.SaleHeader(SaleHeaderID),
+	constraint FK_SaleDetails_StockItem foreign key(StockItemID) references stock.StockItem(StockItemID)
 )
-CREATE TABLE TablesInfo(
+CREATE TABLE auth.TablesInfo(
 	column_name sysname not null,
 	table_name sysname not null,
 	data_type sysname not null,
@@ -259,7 +279,7 @@ CREATE TABLE TablesInfo(
 	update_date datetime not null constraint update_date DEFAULT (getdate())
 )
 
-CREATE TABLE ConstraintsInfo(
+CREATE TABLE auth.ConstraintsInfo(
 	NameofConstraint nvarchar(128) not null,
 	SchemaName nvarchar(128) not null,
 	TableName nvarchar(128) not null,
@@ -267,7 +287,7 @@ CREATE TABLE ConstraintsInfo(
 	update_date_constraint datetime not null constraint update_date_constraint DEFAULT (getdate())
 )
 
-CREATE TABLE SpaceUsed(
+CREATE TABLE auth.SpaceUsed(
 		TableName nvarchar(128),
 		Rows char(20),
 		ReservedSpace varchar(18),
@@ -277,7 +297,7 @@ CREATE TABLE SpaceUsed(
 		updateDate datetime not null constraint updateDate DEFAULT (getdate())
 )
 
-CREATE TABLE Errors(
+CREATE TABLE auth.Errors(
 	ErrorID int identity not null,
 	Message nvarchar(100) null,
 	Username nvarchar(100) not null,

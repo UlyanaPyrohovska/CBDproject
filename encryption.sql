@@ -1,3 +1,5 @@
+use WWIGlobal
+go
 --Creating the master key of the database
 CREATE MASTER KEY
 ENCRYPTION BY PASSWORD = 'CBDProjectPass'
