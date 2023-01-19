@@ -1,6 +1,6 @@
 
 
-//Lists the products and the quantity bought by the user
+//Lists the products and the quantity bought by the user w the date
 db.Sales.aggregate([
     {
         $match: { "Customer": "Tatjana Utjesenovic" }
@@ -18,11 +18,7 @@ db.Sales.aggregate([
     },
     {
         $group: {
-            _id: "$Product.Name",
-            TotalQuantity:
-            {
-                $sum: "$Quantity"
-            }
+            _id: {Product: "$Product.Name", InvoiceDate: "$InvoiceDate", Quantity: "$Quantity"}
         }
     }
 ])
