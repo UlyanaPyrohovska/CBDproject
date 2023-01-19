@@ -1,5 +1,3 @@
-
-
 //Lists the products and the quantity bought by the user w the date
 db.Sales.aggregate([
     {
@@ -122,33 +120,6 @@ db.StockItems.aggregate([
    }
     ])
 
-// db.Sales.aggregate([
-//     {
-//         $lookup: {
-//             from: "StockItems",
-//             localField: "StockItemID",
-//             foreignField: "StockItemID",
-//             as: "Product"
-//         }
-//     },
-//     {
-//         $unwind: "$Product"
-//     },
-//     {
-//         $match: {
-//             "Product.Name": "Superhero action jacket (Blue) 5XL"
-//         }
-//     },
-//     {
-//         $group: {
-//             _id: { $substr: ["$InvoiceDate", 0, 7] } ,
-//             AverageVal: { $avg:  "$TotalIncludingTax" }
-//         }
-//     }
-//   {
-//       $sort: {_id : 1}
-//   }
-// ])
 
 //List by Brand, products and quantities purchased.
 db.Sales.aggregate([
