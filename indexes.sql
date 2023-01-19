@@ -5,15 +5,9 @@ SELECT * FROM UserTable
 
 SET STATISTICS IO ON
 
---CREATE NONCLUSTERED INDEX pc_index on UserTable(PrimaryContact)
---CREATE NONCLUSTERED INDEX emp_index on SaleHeader(SalesPersonID)
-CREATE NONCLUSTERED INDEX city_index on City(Name)
---CREATE NONCLUSTERED INDEX state_index on State(Name)
+CREATE NONCLUSTERED INDEX city_index on City(Name) include(StateID)
 
---DROP INDEX pc_index on UserTable
---DROP INDEX emp_index on SaleHeader
 DROP INDEX city_index on City
---DROP INDEX state_index on State
 
 SELECT c.Name, st.Name, e.PrimaryContact, COUNT(SaleHeaderID) as TotalSales FROM SaleHeader s
 join City c on c.CityID = s.CityID
@@ -24,32 +18,33 @@ group by  c.Name, e.PrimaryContact, st.Name
 
 --For sales, calculate the growth rate for each year, compared to the previous year, by customer category;
 
+CREATE or ALTER FUNCTION fn_total(
+	@ano int,
+	@cat varchar(25)
+)
+RETURNS FLOAT
+BEGIN
+	DECLARE @val float
+	BEGIN
+		SELECT @val = (select CAST(count(sh.SaleHeaderID)as float)  from SaleHeader sh
+	join SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
+	join Customer c on c.CustomerID = sd.CustomerID
+	join CustomerCategory cc on c.CategotyID = cc.CustomerCategoryID
+	where sh.InvoiceDateKey like CAST(@ano as varchar) + '%' and cc.Name = @cat)
+	END
+	if @val = 0 RETURN dbo.fn_total(@ano+1, @cat)
+	RETURN @val
+END
+GO
+
+SELECT A.Ano, (dbo.fn_total(A.Ano, 'Novelty Shop' )- dbo.fn_total(A.Ano-1, 'Novelty Shop' ))/dbo.fn_total(A.Ano-1, 'Novelty Shop') as GrowthRate
+from (SELECT DISTINCT YEAR(sh.InvoiceDateKey) as Ano from SaleHeader sh) A
+ORDER BY A.Ano
+
+
 CREATE NONCLUSTERED INDEX InvoiceDateKey_index on SaleHeader(InvoiceDateKey)
---CREATE NONCLUSTERED INDEX SaleHeader_index on SaleDetails(SaleHeaderID Desc)
 
 DROP INDEX InvoiceDateKey_index on SaleHeader
---DROP INDEX  SaleHeader_index on SaleDetails
-
-DECLARE @Category varchar(20), 
-		@Year int
-
-SET @Category = 'Novelty Shop' 
-SET @Year = 2014
-
-SELECT (count(sh.SaleHeaderID) - (select count(sh.SaleHeaderID) from SaleHeader sh
-join SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
-join Customer c on c.CustomerID = sd.CustomerID
-join CustomerCategory cc on c.CategotyID = cc.CustomerCategoryID
-where sh.InvoiceDateKey like CAST(@Year-1 as varchar) + '%' and cc.Name = @Category
-))/(select CAST(count(sh.SaleHeaderID)as float)  from SaleHeader sh
-join SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
-join Customer c on c.CustomerID = sd.CustomerID
-join CustomerCategory cc on c.CategotyID = cc.CustomerCategoryID
-where sh.InvoiceDateKey like CAST(@Year-1 as varchar) + '%' and cc.Name = @Category) as GrowthRate FROM SaleHeader sh
-join SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
-join Customer c on c.CustomerID = sd.CustomerID
-join CustomerCategory cc on c.CategotyID = cc.CustomerCategoryID
-where sh.InvoiceDateKey like CAST(@Year as varchar) + '%' and cc.Name = @Category
 
 --Number of products (stockItem) in sales by color.
 
