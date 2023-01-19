@@ -9,11 +9,11 @@ CREATE NONCLUSTERED INDEX city_index on readData.City(Name) include(StateID)
 
 DROP INDEX city_index on City
 
-SELECT c.Name, st.Name, e.PrimaryContact, COUNT(SaleHeaderID) as TotalSales FROM salesMgt.SaleHeader s
+SELECT c.Name, st.Name, e.PrimaryContact, sum([Total Including Tax]) as TotalSales FROM dbo.SalesData s
 join readData.City c on c.CityID = s.CityID
 join readData.State st on st.StateID = c.StateID
 join auth.UserTable e on e.UserID = s.SalesPersonID
-where c.Name = 'Madaket' and st.Name = 'Massachusetts'
+--where c.Name = 'Madaket' and st.Name = 'Massachusetts'
 group by  c.Name, e.PrimaryContact, st.Name
 
 --For sales, calculate the growth rate for each year, compared to the previous year, by customer category;
@@ -56,10 +56,14 @@ CREATE NONCLUSTERED INDEX stockItem_index on salesMgt.SaleDetails(StockItemID)
 
 DROP INDEX stockItem_index on SaleDetails
 
+CREATE VIEW NumOfProductsByColor
+AS
 SELECT c.Name, count(SaleDetailsID) as NumOfProducts FROM salesMgt.SaleDetails s
 join stock.StockItem si on si.StockItemID = s.StockItemID
 join readData.Color c on c.ColorID = si.ColorID
 --where c.Name = 'White'
 GROUP BY c.Name
+
+select * from NumOfProductsByColor
 
 SET STATISTICS IO OFF
