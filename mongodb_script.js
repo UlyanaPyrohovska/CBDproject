@@ -1,5 +1,4 @@
-
-//List the “sales history” purchased by the customer by Product
+//Lists the products and the quantity bought by the user w the date
 db.Sales.aggregate([
     {
         $match: { "Customer": "Tatjana Utjesenovic" }
@@ -17,15 +16,12 @@ db.Sales.aggregate([
     },
     {
         $group: {
-            _id: "$Product.Name",
-            TotalQuantity:
-            {
-                $sum: "$Quantity"
-            }
+            _id: {Product: "$Product.Name", InvoiceDate: "$InvoiceDate", Quantity: "$Quantity"}
         }
     }
 ])
 
+//List the “sales history” purchased by the customer by Product
 db.Sales.aggregate([
     {
         $match: { "Customer": "Tatjana Utjesenovic"}
@@ -43,14 +39,22 @@ db.Sales.aggregate([
     }
     {
         $group: {
-            _id: "$SaleHeaderID",
+            _id: {
+                salesID : "$SaleHeaderID", 
+                customer: "$Customer",
+                city : "$City", 
+                salesPerson: "$SalesPerson", 
+                invoiceDate : "$InvoiceDate",
+                TaxRate : "$TaxRate"
+                
+            },
             products:{
                 $push: {
                     Product: "$Product",
                     Quantity: "$Quantity"
                 }
             },
-            totalvalue: {$sum: "$TotalIncludingTax"}
+            totalvalue: {$sum: "$TotalIncludingTax"},
         }
     },
     {
@@ -88,33 +92,35 @@ db.Sales.aggregate([
 ])
 
 //List monthly average total value by Product
-db.Sales.aggregate([
-    {
-        $lookup: {
-            from: "StockItems",
-            localField: "StockItemID",
-            foreignField: "StockItemID",
-            as: "Product"
-        }
-    },
-    {
-        $unwind: "$Product"
-    },
+db.StockItems.aggregate([
     {
         $match: {
-            "Product.Name": "Superhero action jacket (Blue) 5XL"
+            "Name": "Superhero action jacket (Blue) 5XL"
         }
+    },
+    {
+        $lookup: {
+               from: "Sales",
+               localField: "StockItemID",
+               foreignField: "StockItemID",
+               as: "Sales"
+             }
+    },
+    {
+        $unwind: "$Sales"
     },
     {
         $group: {
-            _id: { $substr: ["$InvoiceDate", 0, 7] } ,
-            AverageVal: { $avg:  "$TotalIncludingTax" }
+            _id: { $substr: ["$Sales.InvoiceDate", 0, 7] } ,
+            AverageVal: { $avg:  "$Sales.TotalIncludingTax" }
         }
-    }
-   {
+    },
+    {
        $sort: {_id : 1}
    }
-])
+    ])
+
+
 //List by Brand, products and quantities purchased.
 db.Sales.aggregate([
     {
@@ -141,3 +147,32 @@ db.Sales.aggregate([
         }
     }
 ])
+
+//faster to execute
+db.StockItems.aggregate([
+    {
+        $match: {
+            "Brand": "N/A"
+        }
+    },
+    {
+        $lookup: {
+               from: "Sales",
+               localField: "StockItemID",
+               foreignField: "StockItemID",
+               as: "Sales"
+             }
+    },
+    {
+        $unwind: "$Sales"
+    },
+    {
+        $group: {
+            _id: "$Name",
+            TotalQuantity:
+            {
+                $sum: "$Sales.Quantity"
+            }
+        }
+    }
+    ])

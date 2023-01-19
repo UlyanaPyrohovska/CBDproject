@@ -25,7 +25,10 @@ group by  c.Name, e.PrimaryContact, st.Name
 --For sales, calculate the growth rate for each year, compared to the previous year, by customer category;
 
 CREATE NONCLUSTERED INDEX InvoiceDateKey_index on SaleHeader(InvoiceDateKey)
---CREATE NONCLUSTERED INDEX CustomerID_index on SaleDetails(CustomerID)
+--CREATE NONCLUSTERED INDEX SaleHeader_index on SaleDetails(SaleHeaderID Desc)
+
+DROP INDEX InvoiceDateKey_index on SaleHeader
+--DROP INDEX  SaleHeader_index on SaleDetails
 
 DECLARE @Category varchar(20), 
 		@Year int
