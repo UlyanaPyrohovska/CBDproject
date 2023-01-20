@@ -6,20 +6,22 @@ SET STATISTICS IO ON
 
 CREATE NONCLUSTERED INDEX city_index on readData.City(Name)
 
-DROP INDEX [saleDetailsIndex]
+DROP INDEX city_index on readData.City
+
+DROP INDEX [saleHeaderIndex]
 ON [salesMgt].[SaleDetails]
 
-CREATE NONCLUSTERED INDEX [saleDetailsIndex]
-ON [salesMgt].[SaleDetails] ([StockItemID])
-INCLUDE ([SaleHeaderID],[Quantity],[TaxRateId])
-
+CREATE NONCLUSTERED INDEX [saleHeaderIndex]
+ON [salesMgt].[SaleDetails] ([SaleHeaderID])
+INCLUDE ([Quantity],[StockItemID],[TaxRateId])
+GO
 CREATE VIEW citySales
 as
 SELECT c.Name, st.Name, e.PrimaryContact, sum([Total Including Tax]) as TotalSales FROM dbo.SalesData s
 join readData.City c on c.CityID = s.CityID
 join readData.State st on st.StateID = c.StateID
 join auth.UserTable e on e.UserID = s.SalesPersonID
---where c.Name = 'Madaket' and st.Name = 'Massachusetts'
+where c.Name = 'Madaket' and st.Name = 'Massachusetts'
 group by  c.Name, e.PrimaryContact, st.Name
 go
 
@@ -55,13 +57,13 @@ ORDER BY Ano
 
 CREATE NONCLUSTERED INDEX InvoiceDateKey_index on salesMgt.SaleHeader(InvoiceDateKey)
 
-DROP INDEX InvoiceDateKey_index on SaleHeader
+DROP INDEX InvoiceDateKey_index on  salesMgt.SaleHeader
 
 --Number of products (stockItem) in sales by color.
 
 CREATE NONCLUSTERED INDEX stockItem_index on salesMgt.SaleDetails(StockItemID)
 
-DROP INDEX stockItem_index on SaleDetails
+DROP INDEX stockItem_index on salesMgt.SaleDetails
 
 CREATE VIEW NumOfProductsByColor
 AS
