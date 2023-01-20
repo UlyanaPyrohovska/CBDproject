@@ -47,38 +47,10 @@ go
 
 EXECUTE AS USER='AdminLogin';
 go
---schema creation
-/*
-create schema sale authorization admin1;
-go
-create schema stock authorization admin1;
-go
-create schema location authorization admin1;
-go
 
-create schema customer authorization admin1;
-go
 
-create schema auth authorization admin1;
-go
-*/
-
---setting role permissions
--- --admin
-/*
-grant db_ddladmin to Aministrator;
-go
-grant db_datareader to Aministrator;
-go
-grant db_datawriter to Aministrator;
-go
-grant db_accessadmin to Aministrator;
-go
-grant db_securityadmin to Aministrator;
-go
-grant db_backupoperator to Aministrator;
-go
-*/
+exec sp_who
+revert
 
 grant control on schema::auth to Administrator
 go
@@ -108,6 +80,8 @@ go
 grant references on schema::salesMgt to Administrator
 go
 grant execute on schema::salesMgt to Administrator
+go
+grant create view to Administrator
 go
 
 grant control on schema::readData to Administrator
@@ -197,6 +171,12 @@ go
 grant select on schema::salesMgt to SalesTerritory
 go
 
+--setting roles to users
+exec sp_addrolemember 'EmployeeSalesPerson', 'emplyee1';
+go
+exec sp_addrolemember 'Administrator', 'admin1';
+go
+exec sp_addrolemember 'SalesTerritory', 'salesTerritory1';
 
 exec sp_addrolemember N'Administrator', 'admin1'
 
@@ -229,13 +209,8 @@ inner join salesMgt.Employee e on e.EmployeeID = sh.SalesPersonID
 where st.Name like 'Rocky Mountain';
 go
 
-
--- --sales territory
 grant select on object::location.view_sales_territory to SalesTerritory;
 go
---setting roles to users
-exec sp_addrolemember 'EmployeeSalesPerson', 'emplyee1';
-go
-exec sp_addrolemember 'Administrator', 'admin1';
-go
-exec sp_addrolemember 'SalesTerritory', 'salesTerritory1';
+
+
+

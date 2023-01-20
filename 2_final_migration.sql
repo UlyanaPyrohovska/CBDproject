@@ -4,7 +4,7 @@ go
 --inserting data into states table
 insert into WWIGlobal.readData.State
 select [Code], [Name] 
-from WWI_DS.dbo.states
+from WWI_DS.dbo.state
 
 --inserting data into Country table
 insert into WWIGlobal.readData.Country

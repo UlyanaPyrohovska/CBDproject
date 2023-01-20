@@ -37,22 +37,27 @@ SELECT count(p.IsChillerStock) as'result'
 	
 
 
+execute as user='AdminLogin'
+exec sp_who
 
-select sd.SaleHeaderID, p.StockItemID, p.IsChillerStock, dbo.fn_checkChiller(sd.SaleHeaderID, 0) as 'result'
-from SaleDetails sd
-inner join StockItem p on p.StockItemID = sd.StockItemID
-where p.IsChillerStock = 0
-order by result DESC
-
-
+select fn_checkChiller(1, 1)
+ 
 select sh.SaleHeaderID, sd.SaleDetailsID, p.StockItemID, p.IsChillerStock
-from SaleHeader sh
-join SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
-join StockItem p on p.StockItemID = sd.StockItemID
-where sh.SaleHeaderID = 64639
+from salesmgt.SaleHeader sh
+join salesmgt.SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
+join stock.StockItem p on p.StockItemID = sd.StockItemID
 order by SaleHeaderID
 
+insert into salesMgt.SaleDetails(StockItemID,CustomerID,Quantity,SaleHeaderID,TaxRateId)
+values(71, 1,1,1,1)
+
 select * from SaleDetails where SaleHeaderID = 61518
+
+select * from stock.StockItem where IsChillerStock = 1
+
+
+
+
 
 
 
@@ -71,7 +76,8 @@ order by [actual time] desc
 
 select * from SaleHeader
 
-insert into SaleHeader(CityID,Profit,SalesPersonID,InvoiceDateKey,DeliveryDateKey)
+
+insert into salesMgt.SaleHeader(CityID,Profit,SalesPersonID,InvoiceDateKey,DeliveryDateKey)
 values (1,1,403,'2023-01-16','2023-02-16')
 
 select * from SaleHeader

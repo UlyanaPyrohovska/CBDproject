@@ -7,7 +7,7 @@ go
 drop function if exists fn_countProductsInSale
 go
 
-CREATE OR ALTER FUNCTION fn_countProductsInSale(
+CREATE OR ALTER FUNCTION salesmgt.fn_countProductsInSale(
 	@SaleID int
 )
 RETURNS INT
@@ -38,7 +38,7 @@ GO
 DROP procedure if exists sp_removeStockItem
 go
 
-Create or Alter procedure sp_removeStockItem(
+Create or Alter procedure salesmgt.sp_removeStockItem(
 	@saleID int,
 	@itemID int,
 	@removeSale nvarchar(50)
@@ -46,7 +46,7 @@ Create or Alter procedure sp_removeStockItem(
 AS
 BEGIN try
 	DECLARE @count int
-	select @count = dbo.fn_countProductsInSale(@saleID)
+	select @count = salesMgt.fn_countProductsInSale(@saleID)
 	
 	if (select count(*) from salesMgt.SaleDetails sh where sh.SaleHeaderID = @saleID and sh.StockItemID = @itemID) = 0
 		RAISERROR('Sale does not exist in table',16,1);
@@ -56,7 +56,7 @@ BEGIN try
 	WHERE StockItemID = @itemID
 	AND SaleHeaderID = @saleID
 
-	if @removeSale = 'yes' and dbo.fn_countProductsInSale(@saleID) IS NULL
+	if @removeSale = 'yes' and salesMgt.fn_countProductsInSale(@saleID) IS NULL
 		DELETE FROM salesMgt.[SaleHeader]
 		WHERE SaleHeaderID = @saleID
 	commit transaction
@@ -77,7 +77,7 @@ go
 --FUNCTION
 --	returns the sum total of the price of a saleHeader (sum of the prices of the products)
 --	parameters: @SaleID int - the ID of a SaleHeader
-CREATE or ALTER FUNCTION fnGetSaleTotalPrice(
+CREATE or ALTER FUNCTION salesmgt.fnGetSaleTotalPrice(
 	@SaleID int
 )
 RETURNS MONEY
@@ -101,7 +101,7 @@ go
 --FUNCTION
 --	returns 0 if the product was not delivered within the time specified in the product table
 --	parameters: @SaleID int - the ID of a SaleHeader
-Create or alter function fn_checkTime(
+Create or alter function salesmgt.fn_checkTime(
 	@SaleID int
 )
 RETURNS BIT
@@ -145,7 +145,7 @@ BEGIN TRY
 		select i.SalesPersonID, i.CityID, i.InvoiceDateKey, i.DeliveryDateKey, i.Profit from inserted i
 	COMMIT TRAN
 	
-	if (select dbo.fn_checkTime(@SaleID)) = 0
+	if (select salesMgt.fn_checkTime(@SaleID)) = 0
 		BEGIN
 			ROLLBACK TRANSACTION
 			RAISERROR('Delivery took more time than expected',16,1);
@@ -188,7 +188,7 @@ BEGIN TRY
 				join SaleHeader sd on sd.SaleHeaderID = i.SaleHeaderID
 	COMMIT TRAN
 	
-	if (select dbo.fn_checkTime(@SaleID)) = 0
+	if (select salesMgt.fn_checkTime(@SaleID)) = 0
 		BEGIN
 			ROLLBACK TRANSACTION
 			RAISERROR('Delivery took more time than expected',16,1);
@@ -211,7 +211,7 @@ go
 --	parameters: 
 --		@SaleID int - the ID of a SaleHeader
 --		@Chiller bit - the value of IsChiller of the product in the new sale
-CREATE OR ALTER function fn_checkChiller(
+CREATE OR ALTER function salesmgt.fn_checkChiller(
 	@SaleID int,
 	@Chiller bit
 )
@@ -255,7 +255,7 @@ BEGIN try
 		select CustomerID,SaleHeaderID,StockItemID,Quantity,TaxRateId from inserted
 	commit tran
 	
-	if (select dbo.fn_checkChiller(@saleID, @isChiller)) = 0
+	if (select salesMgt.fn_checkChiller(@saleID, @isChiller)) = 0
 		begin
 			rollback tran
 			RAISERROR('All items must all be either stored on a chiller or not',16,1)
@@ -277,6 +277,7 @@ go
 --	It will verify if the new values in the updated/inserted columns dont conflict with the remaining saleDetails in the same Header
 --	(A given SaleHeader must only contain either chiller or non-chiller stock)
 --	If the obove condition is not met the trigger will throw an error
+
 CREATE OR ALTER TRIGGER trg_ChillerStockSale_Update
 	ON salesMgt.SaleDetails
 	instead of update
@@ -298,7 +299,7 @@ BEGIN try
 				join SaleDetails sd on sd.SaleDetailsID = i.SaleDetailsID
 	commit tran
 	
-	if (select dbo.fn_checkChiller(@saleID, @isChiller)) = 0
+	if (select salesMgt.fn_checkChiller(@saleID, @isChiller)) = 0
 		begin
 			rollback tran
 			RAISERROR('All items must all be either stored on a chiller or not',16,1)
@@ -322,7 +323,7 @@ go
 -- Parameters: 
 --		SalesDetailID - The ID of the SaleDetail containing the product in question
 --		Qty - The new quantity
-CREATE OR ALTER PROCEDURE sp_update_product_qty 
+CREATE OR ALTER PROCEDURE salesmgt.sp_update_product_qty 
 @SalesDetailID int, @Qty int 
 
 AS 
@@ -360,7 +361,7 @@ go
 --		Qty - The new quantity of the product
 --		CustomerID - The ID of the Customer purchasing the product
 --		ProductID - ID of the product
-CREATE OR ALTER PROCEDURE sp_new_SaleDetail 
+CREATE OR ALTER PROCEDURE salesmgt.sp_new_SaleDetail 
 @SalesHeaderID int, @ProductID int, @Qty int, @CustomerID int, @TaxID int
 
 AS 
@@ -403,7 +404,7 @@ go
 --		@Discount decimal - the discount value (percentage)
 --		@Start date - begining date of promo
 --		@End date - end date of promo
-CREATE OR ALTER PROCEDURE sp_addPromotion(
+CREATE OR ALTER PROCEDURE stock.sp_addPromotion(
 	@ItemID int,
 	@Discount decimal(18,3),
 	@Start date,
@@ -446,7 +447,7 @@ go
 --SP: removes a promotion from a given StockItem through the stockitemID and deletes the promotion in the Promotions table
 -- Throws an error if the @ItemID is not valid
 --Paramteres: @ItemID int - ID of the StockItem in question
-CREATE OR ALTER PROCEDURE sp_removePromotion(
+CREATE OR ALTER PROCEDURE stock.sp_removePromotion(
 	@ItemID int
 )
 as
@@ -484,7 +485,7 @@ go
 --		@UserID -> id of the user which needs to be authorized in the system
 --		@hash -> password to be encrypted in the system
 --		@mail nvarchar(255) -> email of the new user
-CREATE OR ALTER PROCEDURE sp_createUser(
+CREATE OR ALTER PROCEDURE auth.sp_createUser(
 	@UserID int,
 	@hash varchar(30),
 	@mail nvarchar(255)
@@ -510,7 +511,7 @@ go
 --	Parameters:
 --		@hash -> password
 --		@mail -> email of the user
-CREATE OR ALTER PROCEDURE sp_password_check(
+CREATE OR ALTER PROCEDURE auth.sp_password_check(
 	@mail nvarchar(255),
 	@hash varchar(30)
 )
@@ -531,7 +532,7 @@ go
 -- throws an error if the user in question does not exist
 --parameters:
 --@UserID int - Id of the user
-create or alter procedure sp_generate_token(
+create or alter procedure auth.sp_generate_token(
 	@UserID int
 )
 as
@@ -562,7 +563,7 @@ go
 --		@CustomerID int - the ID of the Customer
 --		@mail nvarchar(255) - the new email of the customer
 --		@hash binary(64) - the new encrypted password of the user
-CREATE OR ALTER PROCEDURE sp_editUser(
+CREATE OR ALTER PROCEDURE auth.sp_editUser(
 	@userDataID int,
 	@userID int,
 	@hash binary(64),
@@ -602,7 +603,7 @@ go
 -- throws an error if the user account in question does not exist
 --parameters:
 --		@userID int - The id of the Customer's user account
-CREATE OR ALTER PROCEDURE sp_removeUser(
+CREATE OR ALTER PROCEDURE auth.sp_removeUser(
 	@UserID int
 )
 as
