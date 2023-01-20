@@ -28,8 +28,8 @@ ADD File
 (name = WW_data,
 FILENAME  = 'C:\WWIGlobal\Data\data.df',
 SIZE = 4,
-maxsize = 8,
-filegrowth = 2)
+maxsize = 30,
+filegrowth = 20)
 to filegroup WWI_Data;
 go
 
