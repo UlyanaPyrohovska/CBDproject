@@ -77,8 +77,6 @@ insert into WWIGlobal.customer.CustomerCategory(Name)
 select distinct old.Category
 from WWI_DS.dbo.Customer old
 
-select * from auth.UserTable
-
 insert into WWIGlobal.auth.UserTable(PrimaryContact)
 select c.[Primary Contact]
 from WWI_DS.dbo.Customer c
@@ -199,7 +197,6 @@ sum(cast(si.IsChillerStock as int) * sd.Quantity) as totalChillerItems,
 (sum(sd.Quantity) - sum(cast(si.IsChillerStock as int) * sd.Quantity)) as totalDryItems
 --sum(sd.Quantity) as qty
 from WWIGlobal.salesMgt.SaleHeader sh
-join WWIGlobal.salesMgt.SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
 join WWIGlobal.salesMgt.SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
 join WWIGlobal.stock.StockItem si on sd.StockItemID = si.StockItemID
 join WWIGlobal.readData.TaxRate tr on tr.TaxRateID = sd.TaxRateID

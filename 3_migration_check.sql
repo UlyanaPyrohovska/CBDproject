@@ -6,7 +6,7 @@ from WWI_DS.dbo.Customer
 
 --¹ of Customers for WWIGlobal
 select count(CustomerID) as '¹ of Customers'
-from WWIGlobal.dbo.Customer
+from WWIGlobal.customer.Customer
 
 --¹ of Customers per Category for WWI_DS
 select category, count([Customer Key]) as '¹ of Customers'
@@ -15,8 +15,8 @@ group by Category
 
 --¹ of Customers per Category for WWIGlobal
 select c.Name, count(CustomerID) as '¹ of Customers'
-from WWIGlobal.dbo.Customer
-join WWIGlobal.dbo.CustomerCategory c on c.CustomerCategoryID = CategotyID
+from WWIGlobal.customer.Customer
+join WWIGlobal.customer.CustomerCategory c on c.CustomerCategoryID = CategotyID
 group by c.Name
 
 --Total sales per employee for WWI_DS
@@ -26,10 +26,10 @@ group by oldE.Employee
 
 --Total sales per employee for WWIGlobal
 select ut.PrimaryContact, count(s.SaleDetailsID) as 'Total number of sales'
-from WWIGlobal.dbo.SaleDetails s
-join WWIGlobal.dbo.SaleHeader sh on sh.SaleHeaderID = s.SaleHeaderID
-join WWIGlobal.dbo.Employee e on e.EmployeeID = sh.SalesPersonID
-join WWIGlobal.dbo.UserTable ut on ut.UserID =  e.EmployeeID
+from WWIGlobal.salesMgt.SaleDetails s
+join WWIGlobal.salesMgt.SaleHeader sh on sh.SaleHeaderID = s.SaleHeaderID
+join WWIGlobal.salesMgt.Employee e on e.EmployeeID = sh.SalesPersonID
+join WWIGlobal.auth.UserTable ut on ut.UserID =  e.EmployeeID
 group by ut.PrimaryContact
 
 --Total monetary sales per “Stock Item” for WWI_DS
@@ -42,8 +42,8 @@ order by p.[Stock Item]
 
 --Total monetary sales per “Stock Item” for WWIGlobal
 select sd.StockItemID, p.Name, sum(p.UnitPrice * sd.Quantity) as 'Monetary Sales'
-from WWIGlobal.dbo.SaleDetails sd
-join WWIGlobal.dbo.StockItem p on p.StockItemID = sd.StockItemID
+from WWIGlobal.salesMgt.SaleDetails sd
+join WWIGlobal.stock.StockItem p on p.StockItemID = sd.StockItemID
 --where p.Name = 'White chocolate snow balls 250g'
 group by sd.StockItemID, p.Name
 order by p.Name
@@ -59,9 +59,9 @@ order by p.[Stock Item], year(sd.[Delivery Date Key])
 
 --Total monetary sales per year by “Stock Item” for WWIGlobal
 select year(sh.DeliveryDateKey) as Year,sd.StockItemID, p.Name, sum(p.UnitPrice * sd.Quantity) as 'Monetary Sales'
-from WWIGlobal.dbo.SaleDetails sd
-join WWIGlobal.dbo.SaleHeader sh on sh.SaleHeaderID = sd.SaleHeaderID
-join WWIGlobal.dbo.StockItem p on p.StockItemID = sd.StockItemID
+from WWIGlobal.salesMgt.SaleDetails sd
+join WWIGlobal.salesMgt.SaleHeader sh on sh.SaleHeaderID = sd.SaleHeaderID
+join WWIGlobal.stock.StockItem p on p.StockItemID = sd.StockItemID
 where sh.DeliveryDateKey is not null
 --where p.Name = 'White chocolate snow balls 250g'
 group by sd.StockItemID, p.Name, year(sh.DeliveryDateKey)
@@ -79,10 +79,10 @@ order by year(sd.[Delivery Date Key]), c.City
 
 --Total monetary sales per year by “City” for WWIGlobal
 select year(sh.DeliveryDateKey) as Year, c.Name, sum(p.UnitPrice * sd.Quantity) as 'Monetary Sales'
-from WWIGlobal.dbo.SaleDetails sd
-join WWIGlobal.dbo.SaleHeader sh on sh.SaleHeaderID = sd.SaleHeaderID
-join WWIGlobal.dbo.StockItem p on p.StockItemID = sd.StockItemID
-join WWIGlobal.dbo.City c on c.CityID = sh.CityID
+from WWIGlobal.salesMgt.SaleDetails sd
+join WWIGlobal.salesMgt.SaleHeader sh on sh.SaleHeaderID = sd.SaleHeaderID
+join WWIGlobal.stock.StockItem p on p.StockItemID = sd.StockItemID
+join WWIGlobal.readData.City c on c.CityID = sh.CityID
 --where p.Name = 'White chocolate snow balls 250g'
 where sh.DeliveryDateKey is not null
 group by year(sh.DeliveryDateKey), c.Name

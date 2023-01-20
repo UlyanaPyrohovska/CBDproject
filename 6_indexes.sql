@@ -1,13 +1,17 @@
+use WWIGlobal
 --Search sales by city. The name of the city, the name of the seller, to make available, total sales 
 --(note: cities with the same name but different locations should be considered distinct);
 
-SELECT * FROM auth.UserTable
-
 SET STATISTICS IO ON
 
-CREATE NONCLUSTERED INDEX city_index on readData.City(Name) include(StateID)
+CREATE NONCLUSTERED INDEX city_index on readData.City(Name)
 
-DROP INDEX city_index on City
+DROP INDEX [saleDetailsIndex]
+ON [salesMgt].[SaleDetails]
+
+CREATE NONCLUSTERED INDEX [saleDetailsIndex]
+ON [salesMgt].[SaleDetails] ([StockItemID])
+INCLUDE ([SaleHeaderID],[Quantity],[TaxRateId])
 
 CREATE VIEW citySales
 as
