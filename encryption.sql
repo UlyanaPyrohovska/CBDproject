@@ -14,19 +14,19 @@ ALGORITHM = AES_256
 ENCRYPTION BY CERTIFICATE EncryptionCert
 
 --Adding the EncryptPrice column to store encrypted price
-ALTER TABLE WWIGlobal.dbo.StockItem ADD [EncryptPrice] VARBINARY(256)
+ALTER TABLE stock.StockItem ADD [EncryptPrice] VARBINARY(256)
 
 --Encrypting the UnitPrice column 
 OPEN SYMMETRIC KEY PriceKey
 DECRYPTION BY CERTIFICATE EncryptionCert
-UPDATE WWIGlobal.dbo.StockItem
+UPDATE stock.StockItem
 SET [EncryptPrice] = ENCRYPTBYKEY(KEY_GUID('PriceKey'), convert(varchar(256),UnitPrice))
 
 --Decrypting the EncryptPrice column for testing purposes
 OPEN SYMMETRIC KEY PriceKey
 DECRYPTION BY CERTIFICATE EncryptionCert
 SELECT EncryptPrice, CONVERT(VARCHAR(50), DECRYPTBYKEY([EncryptPrice])) as [DecryptPrice]
-FROM WWIGlobal.dbo.StockItem
+FROM stock.StockItem
 
 -- SP: Editing the procedure in order to enable hashing of the passwords using 'SHA' algorithm
 --	Parameters:
@@ -40,10 +40,10 @@ CREATE OR ALTER PROCEDURE sp_createUser(
 )
 as
 begin try
-	if not exists (select 1 from UserTable c where c.UserID = @UserID)
+	if not exists (select 1 from auth.UserTable c where c.UserID = @UserID)
 		RAISERROR('User does not exist in table',16,1);	
 	begin tran
-		insert into UserData(UserID, PasswordHash, Email)
+		insert into auth.UserData(UserID, PasswordHash, Email)
 		values(@UserID, HashBytes('SHA', @hash), @mail)
 	commit tran
 		
@@ -51,7 +51,7 @@ end try
 begin catch
 	rollback transaction
 	print ERROR_MESSAGE()
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values (SUSER_ID(), ERROR_MESSAGE(),  ERROR_NUMBER(), getdate())
 end catch
 
@@ -65,7 +65,7 @@ CREATE OR ALTER PROCEDURE sp_password_check(
 )
 as
 	if exists(
-	SELECT 1 FROM UserData where Email = @mail and PasswordHash = HASHBYTES('SHA', @hash)
+	SELECT 1 FROM auth.UserData where Email = @mail and PasswordHash = HASHBYTES('SHA', @hash)
 	)
 	BEGIN
 		SELECT 'Password matched'

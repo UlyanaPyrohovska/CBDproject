@@ -8,15 +8,15 @@ SELECT
 	ut1.PrimaryContact as [SalesPerson],
 	InvoiceDateKey as [InvoiceDate], 
 	tr.TaxRate as [TaxRate] ,
-	(sd.Quantity * dis.DiscountedPrice + (tr.TaxRate/100 * sd.Quantity * dis.DiscountedPrice)) as [TotalIncludingTax] FROM SaleDetails sd
-join Customer c on c.CustomerID = sd.CustomerID
-join UserTable ut on ut.UserID = c.CustomerID
-join TaxRate tr on tr.TaxRateID = sd.TaxRateId
-join SalesData sh on sh.SaleHeaderID = sd.SaleHeaderID
-join City ci on ci.CityID = sh.CityID
-join State st on st.StateID = ci.StateID
-join UserTable ut1 on ut1.UserID = sh.SalesPersonID
-join ItemsDiscounted dis on dis.StockItemID = sd.StockItemID
+	(sd.Quantity * dis.DiscountedPrice + (tr.TaxRate/100 * sd.Quantity * dis.DiscountedPrice)) as [TotalIncludingTax] FROM salesMgt.SaleDetails sd
+join customer.Customer c on c.CustomerID = sd.CustomerID
+join auth.UserTable ut on ut.UserID = c.CustomerID
+join readData.TaxRate tr on tr.TaxRateID = sd.TaxRateId
+join dbo.SalesData sh on sh.SaleHeaderID = sd.SaleHeaderID
+join readData.City ci on ci.CityID = sh.CityID
+join readData.State st on st.StateID = ci.StateID
+join auth.UserTable ut1 on ut1.UserID = sh.SalesPersonID
+join dbo.ItemsDiscounted dis on dis.StockItemID = sd.StockItemID
 FOR JSON PATH
 
 
@@ -29,7 +29,7 @@ SELECT
 	s.Name as [Size], 
 	si.TypicalWeightPerUnit as [TypicalWeightPerUnit],
 	si.UnitPrice as [UnitPrice]
-	FROM StockItem si
-join Color c on c.ColorID = si.ColorID
-join Size s on s.SizeID = si.SizeID
+	FROM stock.StockItem si
+join readData.Color c on c.ColorID = si.ColorID
+join readData.Size s on s.SizeID = si.SizeID
 FOR JSON PATH

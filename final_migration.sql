@@ -4,7 +4,7 @@ go
 --inserting data into states table
 insert into WWIGlobal.readData.State
 select [Code], [Name] 
-from WWI_DS.dbo.state
+from WWI_DS.dbo.states
 
 --inserting data into Country table
 insert into WWIGlobal.readData.Country
@@ -199,6 +199,7 @@ sum(cast(si.IsChillerStock as int) * sd.Quantity) as totalChillerItems,
 (sum(sd.Quantity) - sum(cast(si.IsChillerStock as int) * sd.Quantity)) as totalDryItems
 --sum(sd.Quantity) as qty
 from WWIGlobal.salesMgt.SaleHeader sh
+join WWIGlobal.salesMgt.SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
 join WWIGlobal.salesMgt.SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
 join WWIGlobal.stock.StockItem si on sd.StockItemID = si.StockItemID
 join WWIGlobal.readData.TaxRate tr on tr.TaxRateID = sd.TaxRateID

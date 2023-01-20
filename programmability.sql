@@ -19,8 +19,8 @@ BEGIN
 	BEGIN
 		--SELECT @count = count(*) from dbo.SaleDetails sd where sd.SaleHeaderID = @SaleID 
 		SELECT @count = count(sd.StockItemID)
-		FROM SaleDetails sd
-		join SaleHeader sh on sd.SaleHeaderID = sh.SaleHeaderID
+		FROM salesMgt.SaleDetails sd
+		join salesMgt.SaleHeader sh on sd.SaleHeaderID = sh.SaleHeaderID
 		where sd.SaleHeaderID = @SaleID
 		group by sd.SaleHeaderID
 	END;
@@ -50,22 +50,22 @@ BEGIN try
 	DECLARE @count int
 	select @count = dbo.fn_countProductsInSale(@saleID)
 	
-	if (select count(*) from SaleDetails sh where sh.SaleHeaderID = @saleID and sh.StockItemID = @itemID) = 0
+	if (select count(*) from salesMgt.SaleDetails sh where sh.SaleHeaderID = @saleID and sh.StockItemID = @itemID) = 0
 		RAISERROR('Sale does not exist in table',16,1);
 
 	begin transaction
-	DELETE FROM [dbo].[SaleDetails]
+	DELETE FROM salesMgt.[SaleDetails]
 	WHERE StockItemID = @itemID
 	AND SaleHeaderID = @saleID
 
 	if @removeSale = 'yes' and dbo.fn_countProductsInSale(@saleID) IS NULL
-		DELETE FROM [dbo].[SaleHeader]
+		DELETE FROM salesMgt.[SaleHeader]
 		WHERE SaleHeaderID = @saleID
 	commit transaction
 
 END try
 BEGIN CATCH
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
@@ -90,8 +90,8 @@ BEGIN
 
 	BEGIN
 		SELECT @result = sum(p.UnitPrice * sd.Quantity)
-		FROM dbo.SaleDetails sd
-			join dbo.StockItem p on p.StockItemID = sd.StockItemID
+		FROM salesMgt.SaleDetails sd
+			join stock.StockItem p on p.StockItemID = sd.StockItemID
 		WHERE @SaleID = sd.SaleHeaderID
 		Group by sd.SaleHeaderID
 	END
@@ -112,13 +112,13 @@ begin
 	DECLARE @leadTime int
 	DECLARE @actualTime int
 
-	if((select count(sd.SaleHeaderID) from SaleDetails sd where sd.SaleHeaderID = @SaleID ) = 0) 
+	if((select count(sd.SaleHeaderID) from salesMgt.SaleDetails sd where sd.SaleHeaderID = @SaleID ) = 0) 
 		return 1
 
-	SELECT @leadTime = p.LeadTimeDays from dbo.SaleDetails sd 
-		join dbo.StockItem p on sd.StockItemID = p.StockItemID
+	SELECT @leadTime = p.LeadTimeDays from salesMgt.SaleDetails sd 
+		join stock.StockItem p on sd.StockItemID = p.StockItemID
 	where sd.SaleHeaderID = @SaleID
-	SELECT @actualTime = DATEDIFF(day, i.InvoiceDateKey, i.DeliveryDateKey) from SaleHeader i where i.SaleHeaderID = @SaleID
+	SELECT @actualTime = DATEDIFF(day, i.InvoiceDateKey, i.DeliveryDateKey) from salesMgt.SaleHeader i where i.SaleHeaderID = @SaleID
 
 	if @actualTime > @leadTime
 		return 0
@@ -135,7 +135,7 @@ DROP TRIGGER IF EXISTS  trg_LeadTimeDays_insert
 go
 
 CREATE OR ALTER TRIGGER trg_LeadTimeDays_insert
-	ON dbo.SaleHeader
+	ON salesMgt.SaleHeader
 	instead of INSERT
 AS
 BEGIN TRY
@@ -155,7 +155,7 @@ BEGIN TRY
 
 END TRY	
 BEGIN CATCH
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
@@ -172,7 +172,7 @@ DROP TRIGGER IF EXISTS trg_LeadTimeDays_update
 go
 
 CREATE OR ALTER TRIGGER trg_LeadTimeDays_update
-	ON dbo.SaleHeader
+	ON salesMgt.SaleHeader
 	instead of update
 AS
 BEGIN TRY
@@ -198,7 +198,7 @@ BEGIN TRY
 
 END TRY	
 BEGIN CATCH
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
@@ -224,8 +224,8 @@ begin
 	declare @count int
 	
 	SELECT @count = count(p.IsChillerStock)
-		FROM dbo.SaleDetails sd
-			join dbo.StockItem p on p.StockItemID = sd.StockItemID
+		FROM salesMgt.SaleDetails sd
+			join stock.StockItem p on p.StockItemID = sd.StockItemID
 		WHERE @SaleID = sd.SaleHeaderID
 			AND p.IsChillerStock =  ~@Chiller
 		Group by sd.SaleHeaderID
@@ -242,14 +242,14 @@ go
 --	(A given SaleHeader must only contain either chiller or non-chiller stock)
 --	If the obove condition is not met the trigger will throw an error
 CREATE OR ALTER TRIGGER trg_ChillerStockSale_Insert
-	ON dbo.SaleDetails
+	ON salesMgt.SaleDetails
 	instead of INSERT
 AS
 BEGIN try
 	declare @isChiller bit
 	declare @saleID int
 	select @isChiller = p.IsChillerStock
-	from StockItem p join inserted i on i.StockItemID = p.StockItemID
+	from stock.StockItem p join inserted i on i.StockItemID = p.StockItemID
 	select @saleID = i.SaleHeaderID from inserted i
 
 	begin tran
@@ -265,7 +265,7 @@ BEGIN try
 
 end try
 BEGIN CATCH
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
@@ -280,14 +280,14 @@ go
 --	(A given SaleHeader must only contain either chiller or non-chiller stock)
 --	If the obove condition is not met the trigger will throw an error
 CREATE OR ALTER TRIGGER trg_ChillerStockSale_Update
-	ON dbo.SaleDetails
+	ON salesMgt.SaleDetails
 	instead of update
 AS
 BEGIN try
 	declare @isChiller bit
 	declare @saleID int
 	select @isChiller = p.IsChillerStock
-	from StockItem p join inserted i on i.StockItemID = p.StockItemID
+	from stock.StockItem p join inserted i on i.StockItemID = p.StockItemID
 	select @saleID = i.SaleHeaderID from inserted i
 
 	begin tran
@@ -308,7 +308,7 @@ BEGIN try
 	
 end try
 BEGIN CATCH
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
@@ -331,14 +331,14 @@ AS
 BEGIN TRY
 
 -- todo: Validation of the qty value (>0), can also be done in trigger
-	if (select count(*) from SaleDetails sd where sd.SaleDetailsID = @SalesDetailID) = 0
+	if (select count(*) from salesMgt.SaleDetails sd where sd.SaleDetailsID = @SalesDetailID) = 0
 		RAISERROR('Sale does not exist in table',16,1);
 
 	if @Qty <= 0
 		RAISERROR('New quantity cannot be 0 or negative', 16,1);
 
 	begin transaction
-		UPDATE SaleDetails 
+		UPDATE salesMgt.SaleDetails 
 			SET Quantity = @Qty
 			WHERE SaleDetailsID = @SalesDetailID;
 	commit transaction
@@ -346,7 +346,7 @@ BEGIN TRY
 
 END TRY
 begin catch
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
@@ -369,26 +369,26 @@ AS
 BEGIN TRY
 -- Todo: validation of customer id and qty, can also be done in triggers (before insert)
 
-	if (select count(*) from SaleHeader sh where sh.SaleHeaderID = @SalesHeaderID) = 0
+	if (select count(*) from salesMgt.SaleHeader sh where sh.SaleHeaderID = @SalesHeaderID) = 0
 		RAISERROR('Sale does not exist in table',16,1);
 
-	if(select count(*) from StockItem p where p.StockItemID = @ProductID) = 0
+	if(select count(*) from stock.StockItem p where p.StockItemID = @ProductID) = 0
 		RAISERROR('Item does not exist in table',16,1);
 
-	if (select count(*) from Customer c where c.CustomerID = @CustomerID) = 0
+	if (select count(*) from customer.Customer c where c.CustomerID = @CustomerID) = 0
 		RAISERROR('Customer does not exist in table',16,1);	
 
-	if (select count(*) from TaxRate t where t.TaxRateID = @TaxID) = 0
+	if (select count(*) from readData.TaxRate t where t.TaxRateID = @TaxID) = 0
 		RAISERROR('TaxRate does not exist in table',16,1);	
 
 	begin tran
-		INSERT INTO SaleDetails(SaleHeaderID, CustomerID, Quantity, StockItemID,TaxRateId)
+		INSERT INTO salesMgt.SaleDetails(SaleHeaderID, CustomerID, Quantity, StockItemID,TaxRateId)
 		VALUES(@SalesHeaderID, @CustomerID, @Qty, @ProductID,@TaxID)
 	commit tran
 
 END TRY
 begin catch
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
@@ -416,26 +416,26 @@ begin try
 	declare @promoID int
 	declare @count int
 	select top 1 @promoID = P.PromotionID
-	from Promotion p
+	from stock.Promotion p
 	order by p.PromotionID DESC
 	set @promoID = @promoID + 1
 
-	if (select count(*) from StockItem p where p.StockItemID = @ItemID) = 0
+	if (select count(*) from stock.StockItem p where p.StockItemID = @ItemID) = 0
 		RAISERROR('Item does not exist in table',16,1);
 
 	
-		insert into Promotion(Discount, StartDate, EndDate)
+		insert into stock.Promotion(Discount, StartDate, EndDate)
 		values(@Discount, @Start, @End)
 
 		
 
-		update StockItem
+		update stock.StockItem
 		set PromotionID = @promoID
 		where StockItemID = @ItemID
 	
 end try
 begin catch
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
@@ -453,26 +453,26 @@ CREATE OR ALTER PROCEDURE sp_removePromotion(
 )
 as
 begin try
-	if (select count(*) from StockItem p where p.StockItemID = @ItemID) = 0
+	if (select count(*) from stock.StockItem p where p.StockItemID = @ItemID) = 0
 		RAISERROR('Item does not exist in table',16,1);
 
-	if (select count(p.PromotionID) from StockItem p where p.StockItemID = @ItemID) = 0
+	if (select count(p.PromotionID) from stock.StockItem p where p.StockItemID = @ItemID) = 0
 		RAISERROR('Item does not have promotion',16,1);
 
 	declare @promoID int
 	select @promoID = i.PromotionID
-	from StockItem i
+	from stock.StockItem i
 	where i.StockItemID = @ItemID
 
-	update StockItem
+	update stock.StockItem
 	set PromotionID = null
 	where StockItemID = @ItemID
 	
-	delete from Promotion
+	delete from stock.Promotion
 	where PromotionID = @promoID
 end try
 begin catch
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
@@ -493,17 +493,17 @@ CREATE OR ALTER PROCEDURE sp_createUser(
 )
 as
 begin try
-	if not exists (select 1 from UserTable c where c.UserID = @UserID)
+	if not exists (select 1 from auth.UserTable c where c.UserID = @UserID)
 		RAISERROR('User does not exist in table',16,1);	
 	begin tran
-		insert into UserData(UserID, PasswordHash, Email)
+		insert into auth.UserData(UserID, PasswordHash, Email)
 		values(@UserID, HashBytes('SHA', @hash), @mail)
 	commit tran
 		
 end try
 begin catch
 	print ERROR_MESSAGE()
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values (SUSER_ID(), ERROR_MESSAGE(),  ERROR_NUMBER(), getdate())
 end catch
 go
@@ -518,7 +518,7 @@ CREATE OR ALTER PROCEDURE sp_password_check(
 )
 as
 	if exists(
-	SELECT 1 FROM UserData where Email = @mail and PasswordHash = HASHBYTES('SHA', @hash)
+	SELECT 1 FROM auth.UserData where Email = @mail and PasswordHash = HASHBYTES('SHA', @hash)
 	)
 	BEGIN
 		SELECT 'Password matched'
@@ -538,15 +538,15 @@ create or alter procedure sp_generate_token(
 )
 as
 begin try
-	if not exists (select 1 from UserData u where u.UserDataID = @userID)
+	if not exists (select 1 from auth.UserData u where u.UserDataID = @userID)
 		RAISERROR('User does not exist in table',16,1);
 	begin tran
-		insert into PasswordResetToken(UserDataID, Token, ExpDate)
+		insert into auth.PasswordResetToken(UserDataID, Token, ExpDate)
 		values (@userID, newid(), DATEADD(hour,24,GETDATE()))
 	commit tran
 end try
 begin catch
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
@@ -573,14 +573,14 @@ CREATE OR ALTER PROCEDURE sp_editUser(
 as
 begin try
  
-	if (select count(*) from UserTable c where c.UserID = @userID) = 0
+	if (select count(*) from auth.UserTable c where c.UserID = @userID) = 0
 		RAISERROR('User does not exists in table',16,1);	
 
-	if  (select count(*) from UserData u where u.UserDataID = @userDataID) = 0
+	if  (select count(*) from auth.UserData u where u.UserDataID = @userDataID) = 0
 		RAISERROR('UserData does not exist in table',16,1);
 
 	begin tran
-		update UserData set
+		update auth.UserData set
 			PasswordHash = @hash,
 			Email = @mail,
 			UserID = @userID
@@ -589,7 +589,7 @@ begin try
 
 end try
 begin catch
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
@@ -609,16 +609,16 @@ CREATE OR ALTER PROCEDURE sp_removeUser(
 )
 as
 begin try
-	if (select count(*) from UserData u where u.UserDataID = @userID)  = 0
+	if (select count(*) from auth.UserData u where u.UserDataID = @userID)  = 0
 		RAISERROR('User does not exist in table',16,1);
 
 	begin tran
-		delete from UserData where UserDataID = @UserID
+		delete from auth.UserData where UserDataID = @UserID
 	commit tran
 
 end try
 begin catch
-	insert into Errors(Username, Message, Number, Date)
+	insert into auth.Errors(Username, Message, Number, Date)
 	values(SUSER_NAME(), ERROR_MESSAGE(), ERROR_NUMBER(), GETDATE())
 	DECLARE @msg varchar(max) = ERROR_MESSAGE(),
 			@sev int = ERROR_SEVERITY(),
