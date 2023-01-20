@@ -85,6 +85,7 @@ DROP TABLE IF EXISTS auth.ConstraintsInfo
 DROP TABLE IF EXISTS auth.Errors
 
 
+
 CREATE TABLE readData.State(
 	StateID int identity not null,
 	Code nvarchar(10) not null,
@@ -304,4 +305,5 @@ CREATE TABLE auth.Errors(
 	Number int not null,
 	Date DATETIME not null
 )
+
 

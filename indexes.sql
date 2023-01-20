@@ -15,12 +15,15 @@ CREATE NONCLUSTERED INDEX city_index on City(Name)
 DROP INDEX city_index on City
 --DROP INDEX state_index on State
 
+CREATE VIEW citySales
+as
 SELECT c.Name, st.Name, e.PrimaryContact, COUNT(SaleHeaderID) as TotalSales FROM SaleHeader s
-join City c on c.CityID = s.CityID
-join State st on st.StateID = c.StateID
-join UserTable e on e.UserID = s.SalesPersonID
+join readData.City c on c.CityID = s.CityID
+join readData.State st on st.StateID = c.StateID
+join auth.UserTable e on e.UserID = s.SalesPersonID
 where c.Name = 'Madaket' and st.Name = 'Massachusetts'
 group by  c.Name, e.PrimaryContact, st.Name
+go
 
 --For sales, calculate the growth rate for each year, compared to the previous year, by customer category;
 
@@ -36,6 +39,8 @@ DECLARE @Category varchar(20),
 SET @Category = 'Novelty Shop' 
 SET @Year = 2014
 
+Create VIEW growthRate
+AS
 SELECT (count(sh.SaleHeaderID) - (select count(sh.SaleHeaderID) from SaleHeader sh
 join SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
 join Customer c on c.CustomerID = sd.CustomerID
@@ -50,17 +55,20 @@ join SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
 join Customer c on c.CustomerID = sd.CustomerID
 join CustomerCategory cc on c.CategotyID = cc.CustomerCategoryID
 where sh.InvoiceDateKey like CAST(@Year as varchar) + '%' and cc.Name = @Category
-
+GO
 --Number of products (stockItem) in sales by color.
 
 CREATE NONCLUSTERED INDEX stockItem_index on SaleDetails(StockItemID)
 
 DROP INDEX stockItem_index on SaleDetails
 
+create view itemColor
+as
 SELECT c.Name, count(SaleDetailsID) as NumOfProducts FROM SaleDetails s
 join StockItem si on si.StockItemID = s.StockItemID
 join Color c on c.ColorID = si.ColorID
 --where c.Name = 'White'
 GROUP BY c.Name
+go
 
 SET STATISTICS IO OFF

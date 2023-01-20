@@ -7,6 +7,8 @@ go
 drop function if exists fn_countProductsInSale
 go
 
+use salesMgt
+
 CREATE OR ALTER FUNCTION fn_countProductsInSale(
 	@SaleID int
 )

@@ -185,8 +185,8 @@ case
 	when pr.PromotionID is null then si.UnitPrice
 	else si.UnitPrice * (100 - pr.Discount) / 100
 end as DiscountedPrice
-from StockItem si
-left join WWIGlobal.dbo.Promotion pr on pr.PromotionID = si.PromotionID
+from stock.StockItem si
+left join WWIGlobal.stock.Promotion pr on pr.PromotionID = si.PromotionID
 go
 --Creating the view with information about each sale
 CREATE VIEW SalesData
@@ -199,7 +199,7 @@ sum(cast(si.IsChillerStock as int) * sd.Quantity) as totalChillerItems,
 (sum(sd.Quantity) - sum(cast(si.IsChillerStock as int) * sd.Quantity)) as totalDryItems
 --sum(sd.Quantity) as qty
 from WWIGlobal.salesMgt.SaleHeader sh
-join WWIGlobal.salesMgt.SaleHeader sd on sd.SaleHeaderID = sh.SaleHeaderID
+join WWIGlobal.salesMgt.SaleDetails sd on sd.SaleHeaderID = sh.SaleHeaderID
 join WWIGlobal.stock.StockItem si on sd.StockItemID = si.StockItemID
 join WWIGlobal.readData.TaxRate tr on tr.TaxRateID = sd.TaxRateID
 left join WWIGlobal.stock.Promotion pr on pr.PromotionID = si.PromotionID

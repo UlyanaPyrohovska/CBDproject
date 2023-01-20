@@ -104,7 +104,7 @@ select SaleDetailsID, StockItemID, Quantity from SaleDetails where SaleDetailsID
 
 exec sp_update_product_qty 1, 20
 
-UPDATE SaleDetails 
+UPDATE salesMgt.SaleDetails 
 	SET 
 	CustomerID = 2,
 	StockItemID = 15,
@@ -113,7 +113,7 @@ UPDATE SaleDetails
 	TaxRateId = 3
 	WHERE SaleDetailsID = 1;
 
-select * from SaleDetails where SaleDetailsID = 1
+select * from salesMgt.SaleDetails  
 
 select * from StockItem where SaleDetailsID = 1
 
